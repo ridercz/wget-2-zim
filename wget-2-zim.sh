@@ -10,32 +10,84 @@ WGETREJECT_ARCHIVE=',*.lz,*.gz,*.zip,*.rar,*.7z,*.tar*,*.xz,*.bz2'
 WGETREJECT_PROGRAM=',*.exe,*.deb,*.rpm,*.dmg,*.bin,*.msi,*.apk,*.tar.*z'
 
 if [[ " --help -help -h " =~ " $1 " || "$1" == "" ]]; then
-	echo "	$0 [OPTIONS] URL"
-	echo "	Makes ZIM file from URL with recursive wget and lots of tricks."
-	echo " "
-	echo "	wget-2-zim tries to make a bunch of smart decisions what to include in the ZIM, but it still"
-	echo "	tries to include as much as sanely possible (like PDFs, XLS files, music and video)."
-	echo " "
-	echo "	--any-max	[SIZE (MB)]	Any file larger will be deleted before doing the ZIM no matter what. Default = 128MB"
-	echo "	--not-media-max [SIZE (MB)]	Any file larger that is not music, video, picture or epub, pdf, xls alike will be excluded. Default = 2MB"
-	echo "	--picture-max 	[SIZE (MB)]	Any picture file larger will be excluded from ZIM. Default = unset"
-	echo "	--document-max 	[SIZE (MB)]	Any document file larger will be excluded from ZIM (epub, pdf, xls, ods, etc.). Default = unset"
-	echo "	--music-max 	[SIZE (MB)]	Any music file larger will be excluded from ZIM. Default = unset"
-	echo "	--video-max 	[SIZE (MB)]	Any video file larger will be excluded from ZIM. Default = unset"
-	echo "	--wget-depth			Set this to 1 or 3 if you want to make very shallow copies. Default = 7"
-	echo "	--include-zip 			Includes all sorts of archives (zip, rar, 7z, gz, etc)."
-	echo "	--include-exe			Includes all sorts of program files (exe, msi, deb, rpm, etc)."
-	echo "	--include-any			Download any file type."
-	echo "	--no-overreach-media		Don't overreach by downloading media files from external domains (might affect images directly visible on the page)."
-	echo "	--overreach-any			Overreach by downloading any sort of src= and href= content from external domains."
-	echo "	--turbo				Disable all download delays (will probably result in half the files missing due to throttling with false 404s)"
-	echo "	--skip-download			Skip the wget download step and use existing files in the domain directory."
-	echo "	--creator				Custom creator string for the ZIM file. Default = https://github.com/ballerburg9005/wget-2-zim"
-	echo "	--publisher				Custom publisher string for the ZIM file. Default = wget-2-zim, a simple easy to use script that just works"
-	echo "	--description			Custom description for the ZIM file. Default = extracted from page title"
-	echo "	--long-description		Custom long description for the ZIM file. Default = description + '(created by wget-2-zim)'"
-	echo "	--language				ISO 639-3 language code for the ZIM file. Default = eng"
-	echo "	--output				Custom output file name (also used as working directory name). Default = domain name"
+	echo "  $0 [OPTIONS] URL"
+	echo "  Makes ZIM file from URL with recursive wget and lots of tricks."
+	echo ""
+	echo "  wget-2-zim tries to make a bunch of smart decisions what to include"
+	echo "  in the ZIM, but it still tries to include as much as sanely possible"
+	echo "  (like PDFs, XLS files, music and video)."
+	echo ""
+	echo "OPTIONS:"
+	echo "  --any-max [SIZE_MB]"
+	echo "      Any file larger will be deleted before ZIM creation."
+	echo "      Default: 128MB"
+	echo ""
+	echo "  --not-media-max [SIZE_MB]"
+	echo "      Max size for non-media files (not music, video, picture, epub,"
+	echo "      pdf, xls). Default: 2MB"
+	echo ""
+	echo "  --picture-max [SIZE_MB]"
+	echo "      Max size for picture files. Default: unset"
+	echo ""
+	echo "  --document-max [SIZE_MB]"
+	echo "      Max size for documents (epub, pdf, xls, ods, etc.). Default: unset"
+	echo ""
+	echo "  --music-max [SIZE_MB]"
+	echo "      Max size for music files. Default: unset"
+	echo ""
+	echo "  --video-max [SIZE_MB]"
+	echo "      Max size for video files. Default: unset"
+	echo ""
+	echo "  --wget-depth [NUMBER]"
+	echo "      Recursion depth (use 1 or 3 for shallow copies). Default: 7"
+	echo ""
+	echo "  --include-zip"
+	echo "      Include archives (zip, rar, 7z, gz, etc.)."
+	echo ""
+	echo "  --include-exe"
+	echo "      Include program files (exe, msi, deb, rpm, etc.)."
+	echo ""
+	echo "  --include-any"
+	echo "      Download any file type."
+	echo ""
+	echo "  --no-overreach-media"
+	echo "      Don't download media files from external domains (may affect"
+	echo "      images directly visible on the page)."
+	echo ""
+	echo "  --overreach-any"
+	echo "      Download any src=/href= content from external domains."
+	echo ""
+	echo "  --turbo"
+	echo "      Disable download delays (may result in missing files due to"
+	echo "      throttling with false 404s)."
+	echo ""
+	echo "  --skip-download"
+	echo "      Skip wget download step, use existing files in domain directory."
+	echo ""
+	echo "  --creator [STRING]"
+	echo "      Custom creator string for ZIM file."
+	echo "      Default: https://github.com/ballerburg9005/wget-2-zim"
+	echo ""
+	echo "  --publisher [STRING]"
+	echo "      Custom publisher string for ZIM file."
+	echo "      Default: wget-2-zim, a simple easy to use script that just works"
+	echo ""
+	echo "  --description [STRING]"
+	echo "      Custom description for ZIM file."
+	echo "      Default: extracted from page title"
+	echo ""
+	echo "  --long-description [STRING]"
+	echo "      Custom long description for ZIM file."
+	echo "      Default: description + '(created by wget-2-zim)'"
+	echo ""
+	echo "  --language [CODE]"
+	echo "      ISO 639-3 language code for ZIM file. Default: eng"
+	echo ""
+	echo "  --output [NAME]"
+	echo "      Custom output file name. Default: domain name"
+	echo ""
+	echo "  --working-dir [PATH]"
+	echo "      Custom working directory name. Default: domain name"
 	exit -1
 fi
 
@@ -74,6 +126,7 @@ ZIM_DESCRIPTION=""
 ZIM_LONGDESCRIPTION=""
 ZIM_LANGUAGE="eng"
 OUTPUT_NAME=""
+WORKING_DIR=""
 
 ARGS=("$@");
 for ((i=0; i<${#ARGS[@]}; i++)); do
@@ -114,6 +167,12 @@ for ((i=0; i<${#ARGS[@]}; i++)); do
 		--output)
 			if (( i + 1 < ${#ARGS[@]} )); then OUTPUT_NAME="${ARGS[$((i + 1))]}"; fi
 			;;
+		--working-dir=*)
+			WORKING_DIR="${ARGS[$i]#--working-dir=}"
+			;;
+		--working-dir)
+			if (( i + 1 < ${#ARGS[@]} )); then WORKING_DIR="${ARGS[$((i + 1))]}"; fi
+			;;
 	esac
 done
 
@@ -129,7 +188,8 @@ echo ""
 echo "ZIM creator: $ZIM_CREATOR"
 echo "ZIM publisher: $ZIM_PUBLISHER"
 echo "ZIM language: $ZIM_LANGUAGE"
-echo "Output name: $OUTPUT_NAME"
+if [[ -n "$OUTPUT_NAME" ]]; then echo "Output name: $OUTPUT_NAME"; fi
+if [[ -n "$WORKING_DIR" ]]; then echo "Working directory: $WORKING_DIR"; fi
 if [[ -n "$ZIM_DESCRIPTION" ]]; then echo "ZIM description: $ZIM_DESCRIPTION"; fi
 if [[ -n "$ZIM_LONGDESCRIPTION" ]]; then echo "ZIM long description: $ZIM_LONGDESCRIPTION"; fi
 echo "+++++++++++++ BEGIN CRAWLING +++++++++++++"
@@ -141,9 +201,13 @@ echo ""
 DOMAIN="$(echo "$@" | grep -o "[^[:space:]]*://[^[:space:]]*" | sed 's#^[^/]*//##g;s#/.*$##g')" 
 WELCOME="$(echo "$URL" | sed 's#^[^/]*//##g;' | grep -o "/.*$" | sed 's/\?/%3F/g')"
 
-# Set output name to custom name or default to domain
+# Set output name and working directory to custom values or default to domain
 if [[ -z "$OUTPUT_NAME" ]]; then
 	OUTPUT_NAME="$DOMAIN"
+fi
+
+if [[ -z "$WORKING_DIR" ]]; then
+	WORKING_DIR="$DOMAIN"
 fi
 
 
@@ -154,7 +218,14 @@ wget -r -p -k -c --trust-server-names --level="${OPTS[wget-depth]}" --timeout=3s
 	--reject "$WGETREJECT" \
 	--user-agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.41 Safari/537.36" \
 	--header="X-Requested-With: XMLHttpRequest" --referer="$DOMAIN" --header='Accept-Language: en' \
+	--directory-prefix="$WORKING_DIR" \
 	$URL
+
+# Move files from hostname subdirectory to working directory root
+if [[ -d "$WORKING_DIR/$DOMAIN" ]]; then
+	mv "$WORKING_DIR/$DOMAIN"/* "$WORKING_DIR/"
+	rmdir "$WORKING_DIR/$DOMAIN"
+fi
 
 echo "Wget finished."
 }
@@ -208,7 +279,7 @@ for url in $(printf "%s\n%s" "$urls_single" "$urls_double"); do
 			--user-agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.41 Safari/537.36" \
 			--header="X-Requested-With: XMLHttpRequest" --referer="$DOMAIN" \
 			--reject "$WGETREJECT" \
-		--directory-prefix="$OUTPUT_NAME/wget-2-zim-overreach" "$url"
+		--directory-prefix="$WORKING_DIR/wget-2-zim-overreach" "$url"
 	fi
 	echo "$url" >> $EXTERNALURLS
 done
@@ -275,15 +346,15 @@ THEREISNOPLACELIKEHOME
 echo "iterating over .html files to fix links, css and stuff"
 chmod 755 $iterscript
 EXTERNALURLS=$(mktemp)
-find $OUTPUT_NAME -type f \( -name '*.htm*' -or -name '*.php*' \) -exec "$iterscript" "$DOMAIN" '{}' "$EXTERNALURLS" "$WGETREJECT" "$NOOVERREACH" -not -path "./$OUTPUT_NAME/wget-2-zim-overreach/*" \;
-find $OUTPUT_NAME/wget-2-zim-overreach/ -type f \( -name '*.htm*' -or -name '*.php*' \) -exec "$iterscript" "$DOMAIN" '{}' "$EXTERNALURLS" "$WGETREJECT" "ma" \;
-mv $OUTPUT_NAME/wget-2-zim-overreach/* $OUTPUT_NAME/
+find $WORKING_DIR -type f \( -name '*.htm*' -or -name '*.php*' \) -exec "$iterscript" "$DOMAIN" '{}' "$EXTERNALURLS" "$WGETREJECT" "$NOOVERREACH" -not -path "./$WORKING_DIR/wget-2-zim-overreach/*" \;
+find $WORKING_DIR/wget-2-zim-overreach/ -type f \( -name '*.htm*' -or -name '*.php*' \) -exec "$iterscript" "$DOMAIN" '{}' "$EXTERNALURLS" "$WGETREJECT" "ma" \;
+mv $WORKING_DIR/wget-2-zim-overreach/* $WORKING_DIR/
 rm $EXTERNALURLS $iterscript
 echo "iteration finished"
 }
 
 echo "renaming .css?xxx files to .css"
-find $OUTPUT_NAME -name '*\.css\?*' -exec sh -c 'mv '"'"'{}' "'"'" "\$(echo '"'"'{}' "'"'" | sed -E "s#\.css\?.*#.css#g")" ' \;
+find $WORKING_DIR -name '*\.css\?*' -exec sh -c 'mv '"'"'{}' "'"'" "\$(echo '"'"'{}' "'"'" | sed -E "s#\.css\?.*#.css#g")" ' \;
 
 
 # various shenanegans to deal with media and large files
@@ -292,9 +363,9 @@ function largedelete {
 
 echo "deleting files deemed too large"
 
-if [[ "${OPTS[any-max]}" != "" ]]; then find $OUTPUT_NAME -type f -size "+${OPTS[any-max]}M" -delete; fi
+if [[ "${OPTS[any-max]}" != "" ]]; then find $WORKING_DIR -type f -size "+${OPTS[any-max]}M" -delete; fi
 
-if [[ "${OPTS[not-media-max]}" != "" ]]; then 	find $OUTPUT_NAME -type f -not \( \
+if [[ "${OPTS[not-media-max]}" != "" ]]; then 	find $WORKING_DIR -type f -not \( \
 				-name '*\.3g*' -or -name '*\.avi' -or -name '*\.flv*' -or -name '*\.h26*' -or -name '*\.m*v' -or -name '*\.mp*g' -or -name '*\.swf' -or -name '*\.wmv' -or -name '*\.mkv' -or -name '*\.mp4' -or -name '*\.divx' -or -name '*\.f4v' -or -name '*\.ogv' -or -name '*\.webm' \
 				-or -name '*\.aif' -or -name '*\.ogg' -or -name '*\.wav' -or -name '*\.aac' -or -name '*\.mp3' -or -name '*\.flac'  -or -name '*\.wma' -or -name '*\.amr' -or -name '*\.fla' -or -name '*\.ac3' -or -name '*\.au' -or -name '*\.mka' \
 				-or -name '*\.pdf' -or -name '*\.epub' -or -name '*\.pdb' -or -name '*\.xls*' -or -name '*\.doc*' -or -name '*\.od*' -or -name '*\.ppt*' \
@@ -302,22 +373,22 @@ if [[ "${OPTS[not-media-max]}" != "" ]]; then 	find $OUTPUT_NAME -type f -not \(
 									\) -size "+${OPTS[not-media-max]}M" -delete;
 fi
 
-if [[ "${OPTS[picture-max]}" != "" ]]; then 	find $OUTPUT_NAME -type f -not \( \
+if [[ "${OPTS[picture-max]}" != "" ]]; then 	find $WORKING_DIR -type f -not \(
 				-or -name '*\.png' -or -name '*\.jp' -or -name '*\.gif' -or -name '*\.svg' \
 									\) -size "+${OPTS[picture-max]}M" -delete;
 fi
 
-if [[ "${OPTS[document-max]}" != "" ]]; then 	find $OUTPUT_NAME -type f \( \
+if [[ "${OPTS[document-max]}" != "" ]]; then 	find $WORKING_DIR -type f \(
 				-name '*\.pdf' -or -name '*\.epub' -or -name '*\.pdb' -or -name '*\.xls*' -or -name '*\.doc*' -or -name '*\.od*' -or -name '*\.ppt*' \
 									\) -size "+${OPTS[document-max]}M" -delete;
 fi
 
 
-if [[ "${OPTS[music-max]}" != "" ]]; then 	find $OUTPUT_NAME -type f \( \
+if [[ "${OPTS[music-max]}" != "" ]]; then 	find $WORKING_DIR -type f \(
 				-or -name '*\.aif' -or -name '*\.ogg' -or -name '*\.wav' -or -name '*\.aac' -or -name '*\.mp3' -or -name '*\.flac'  -or -name '*\.wma' -or -name '*\.amr' -or -name '*\.fla' -or -name '*\.ac3' -or -name '*\.au' -or -name '*\.mka' \
 									\) -size "+${OPTS[music-max]}M" -delete;
 fi
-if [[ "${OPTS[video-max]}" != "" ]]; then 	find $OUTPUT_NAME -type f \( \
+if [[ "${OPTS[video-max]}" != "" ]]; then 	find $WORKING_DIR -type f \(
 				-name '*\.3g*' -or -name '*\.avi' -or -name '*\.flv*' -or -name '*\.h26*' -or -name '*\.m*v' -or -name '*\.mp*g' -or -name '*\.swf' -or -name '*\.wmv' -or -name '*\.mkv' -or -name '*\.mp4' -or -name '*\.divx' -or -name '*\.f4v' -or -name '*\.ogv' -or -name '*\.webm' \
 									\) -size "+${OPTS[video-max]}M" -delete;
 fi
@@ -330,27 +401,27 @@ echo "deleting files finished"
 if [[ "$SKIPDOWNLOAD" != "true" ]]; then
 	thewget
 fi
-#rsync -ra $OUTPUT_NAME/ ${OUTPUT_NAME}_debug/
+#rsync -ra $WORKING_DIR/ ${WORKING_DIR}_debug/
 postwget
 largedelete
 
 # favicon
  
-MYFAVICON="$(command ls -w 1 $OUTPUT_NAME/favicon*.{png,ico,gif,jpg,bmp} 2>/dev/null | tail -n 1)"
+MYFAVICON="$(command ls -w 1 $WORKING_DIR/favicon*.{png,ico,gif,jpg,bmp} 2>/dev/null | tail -n 1)"
 
 if [ -f "$MYFAVICON" ]; then
-	convert "$MYFAVICON[0]" -define icon:auto-resize=48 $OUTPUT_NAME/zim_favicon.png
+	convert "$MYFAVICON[0]" -define icon:auto-resize=48 $WORKING_DIR/zim_favicon.png
 else  
-	convert -size 48x48 xc:white $OUTPUT_NAME/zim_favicon.png
+	convert -size 48x48 xc:white $WORKING_DIR/zim_favicon.png
 fi
 
 
 # choose index page (welcome)
 
-if [ ! -f "$OUTPUT_NAME/$WELCOME" ]; then
-	LISTHTML="$(find "$OUTPUT_NAME" -type f -maxdepth 1 \( -name 'index.htm*' -or -name 'index.php*' \) -printf '%f\n' 2>/dev/null | sort)"
- 	LISTHTML="$LISTHTML"$'\n'"$(find "$OUTPUT_NAME" -type f -maxdepth 1 \( -name '*.htm*' -or -name '*.php*' \) -printf '%f\n' 2>/dev/null | sort)"
-	WELCOME="$(echo "$LISTHTML" | sed '/^$/d' | cat - <(echo "$OUTPUT_NAME/index.html") | head -n 1 | sed "s#^[^/]*/##g")"
+if [ ! -f "$WORKING_DIR/$WELCOME" ]; then
+	LISTHTML="$(find "$WORKING_DIR" -type f -maxdepth 1 \( -name 'index.htm*' -or -name 'index.php*' \) -printf '%f\n' 2>/dev/null | sort)"
+ 	LISTHTML="$LISTHTML"$'\n'"$(find "$WORKING_DIR" -type f -maxdepth 1 \( -name '*.htm*' -or -name '*.php*' \) -printf '%f\n' 2>/dev/null | sort)"
+	WELCOME="$(echo "$LISTHTML" | sed '/^$/d' | cat - <(echo "$WORKING_DIR/index.html") | head -n 1 | sed "s#^[^/]*/##g")"
 fi
 
 
@@ -361,7 +432,7 @@ rm ${OUTPUT_NAME}.zim >&/dev/null
 echo "writing ZIM"
 
 if [[ -z "$ZIM_DESCRIPTION" ]]; then
-	DESCRIPTION="$(cat $OUTPUT_NAME/index.html | tr '\n' ' ' | grep -oaE "<title>[^>]*</title>" | sed "s/<[^>]*>//g;s/[[:space:]]\+/\ /g;s/^[[:space:]]*//g;s/[[:space:]]*$//g" | cat - <(echo "no description") | head -n 1 )"
+	DESCRIPTION="$(cat $WORKING_DIR/index.html | tr '\n' ' ' | grep -oaE "<title>[^>]*</title>" | sed "s/<[^>]*>//g;s/[[:space:]]\+/\ /g;s/^[[:space:]]*//g;s/[[:space:]]*$//g" | cat - <(echo "no description") | head -n 1 )"
 else
 	DESCRIPTION="$ZIM_DESCRIPTION"
 fi
@@ -372,10 +443,10 @@ else
 	LONGDESCRIPTION="$ZIM_LONGDESCRIPTION"
 fi
 
-if zimwriterfs --welcome="$WELCOME" --illustration=zim_favicon.png --language="$ZIM_LANGUAGE" --title="$DOMAIN" --description "$DESCRIPTION" --longDescription="$LONGDESCRIPTION" --creator="$ZIM_CREATOR" --publisher "$ZIM_PUBLISHER" --name "$OUTPUT_NAME" --source="$DOMAIN" --scraper "wget-2-zim `date` , `wget --version |head -n 1`" ./$OUTPUT_NAME $OUTPUT_NAME.zim; then
+if zimwriterfs --welcome="$WELCOME" --illustration=zim_favicon.png --language="$ZIM_LANGUAGE" --title="$DOMAIN" --description "$DESCRIPTION" --longDescription="$LONGDESCRIPTION" --creator="$ZIM_CREATOR" --publisher "$ZIM_PUBLISHER" --name "$OUTPUT_NAME" --source="$DOMAIN" --scraper "wget-2-zim `date` , `wget --version |head -n 1`" ./$WORKING_DIR $OUTPUT_NAME.zim; then
 	echo "Success in creating ZIM file!"
-#	rm -rf ./$OUTPUT_NAME
+#	rm -rf ./$WORKING_DIR
 else
-	echo "FAILURE! Left $OUTPUT_NAME download directory in place."
+	echo "FAILURE! Left $WORKING_DIR download directory in place."
 fi
 
