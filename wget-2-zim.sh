@@ -273,7 +273,7 @@ largedelete
 MYFAVICON="$(command ls -w 1 $DOMAIN/favicon*.{png,ico,gif,jpg,bmp} 2>/dev/null | tail -n 1)"
 
 if [ -f "$MYFAVICON" ]; then
-	convert -resize 48x48 "$MYFAVICON[0]" $DOMAIN/zim_favicon.png
+	convert "$MYFAVICON[0]" -define icon:auto-resize=48 $DOMAIN/zim_favicon.png
 else  
 	convert -size 48x48 xc:white $DOMAIN/zim_favicon.png
 fi
