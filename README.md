@@ -69,11 +69,12 @@ Then follow the steps in section "running on Ubuntu".
 
 # running on Ubuntu
 
-0. sudo bash
-1. apt update
-2. apt install wget imagemagick git zim-tools
-3. git clone https://github.com/ballerburg9005/wget-2-zim
-4. ./wget-2-zim/wget-2-zim.sh https://example.org
+```bash
+sudo apt update
+sudo apt install wget imagemagick git zim-tools
+git clone https://github.com/ballerburg9005/wget-2-zim
+./wget-2-zim/wget-2-zim.sh https://example.org
+```
 
 # troubleshooting for beginners
 
