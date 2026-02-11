@@ -206,6 +206,9 @@ if [[ -z "$OUTPUT_NAME" ]]; then
 	OUTPUT_NAME="$DOMAIN"
 fi
 
+# Remove .zim extension if present so we can append it consistently
+OUTPUT_NAME="${OUTPUT_NAME%.zim}"
+
 if [[ -z "$WORKING_DIR" ]]; then
 	WORKING_DIR="$DOMAIN"
 fi
