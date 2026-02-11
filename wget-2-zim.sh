@@ -35,6 +35,7 @@ if [[ " --help -help -h " =~ " $1 " || "$1" == "" ]]; then
 	echo "	--description			Custom description for the ZIM file. Default = extracted from page title"
 	echo "	--long-description		Custom long description for the ZIM file. Default = description + '(created by wget-2-zim)'"
 	echo "	--language				ISO 639-3 language code for the ZIM file. Default = eng"
+	echo "	--output				Custom output file name (also used as working directory name). Default = domain name"
 	exit -1
 fi
 
@@ -72,6 +73,7 @@ ZIM_PUBLISHER="wget-2-zim, a simple easy to use script that just works"
 ZIM_DESCRIPTION=""
 ZIM_LONGDESCRIPTION=""
 ZIM_LANGUAGE="eng"
+OUTPUT_NAME=""
 
 ARGS=("$@");
 for ((i=0; i<${#ARGS[@]}; i++)); do
@@ -106,6 +108,12 @@ for ((i=0; i<${#ARGS[@]}; i++)); do
 		--language)
 			if (( i + 1 < ${#ARGS[@]} )); then ZIM_LANGUAGE="${ARGS[$((i + 1))]}"; fi
 			;;
+		--output=*)
+			OUTPUT_NAME="${ARGS[$i]#--output=}"
+			;;
+		--output)
+			if (( i + 1 < ${#ARGS[@]} )); then OUTPUT_NAME="${ARGS[$((i + 1))]}"; fi
+			;;
 	esac
 done
 
@@ -119,7 +127,10 @@ echo -en "Size limits: "
 for opt in "${!OPTS[@]}"; do echo -en "$COMMA$opt = ${OPTS[$opt]}"; COMMA=", "; done
 echo ""
 echo "ZIM creator: $ZIM_CREATOR"
-echo "ZIM publisher: $ZIM_PUBLISHER"echo "ZIM language: $ZIM_LANGUAGE"if [[ -n "$ZIM_DESCRIPTION" ]]; then echo "ZIM description: $ZIM_DESCRIPTION"; fi
+echo "ZIM publisher: $ZIM_PUBLISHER"
+echo "ZIM language: $ZIM_LANGUAGE"
+echo "Output name: $OUTPUT_NAME"
+if [[ -n "$ZIM_DESCRIPTION" ]]; then echo "ZIM description: $ZIM_DESCRIPTION"; fi
 if [[ -n "$ZIM_LONGDESCRIPTION" ]]; then echo "ZIM long description: $ZIM_LONGDESCRIPTION"; fi
 echo "+++++++++++++ BEGIN CRAWLING +++++++++++++"
 echo ""
@@ -129,6 +140,11 @@ echo ""
 
 DOMAIN="$(echo "$@" | grep -o "[^[:space:]]*://[^[:space:]]*" | sed 's#^[^/]*//##g;s#/.*$##g')" 
 WELCOME="$(echo "$URL" | sed 's#^[^/]*//##g;' | grep -o "/.*$" | sed 's/\?/%3F/g')"
+
+# Set output name to custom name or default to domain
+if [[ -z "$OUTPUT_NAME" ]]; then
+	OUTPUT_NAME="$DOMAIN"
+fi
 
 
 # download with wget
@@ -192,7 +208,7 @@ for url in $(printf "%s\n%s" "$urls_single" "$urls_double"); do
 			--user-agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.41 Safari/537.36" \
 			--header="X-Requested-With: XMLHttpRequest" --referer="$DOMAIN" \
 			--reject "$WGETREJECT" \
-			--directory-prefix="$DOMAIN/wget-2-zim-overreach" "$url"
+		--directory-prefix="$OUTPUT_NAME/wget-2-zim-overreach" "$url"
 	fi
 	echo "$url" >> $EXTERNALURLS
 done
@@ -259,15 +275,15 @@ THEREISNOPLACELIKEHOME
 echo "iterating over .html files to fix links, css and stuff"
 chmod 755 $iterscript
 EXTERNALURLS=$(mktemp)
-find $DOMAIN -type f \( -name '*.htm*' -or -name '*.php*' \) -exec "$iterscript" "$DOMAIN" '{}' "$EXTERNALURLS" "$WGETREJECT" "$NOOVERREACH" -not -path "./$DOMAIN/wget-2-zim-overreach/*" \;
-find $DOMAIN/wget-2-zim-overreach/ -type f \( -name '*.htm*' -or -name '*.php*' \) -exec "$iterscript" "$DOMAIN" '{}' "$EXTERNALURLS" "$WGETREJECT" "ma" \;
-mv $DOMAIN/wget-2-zim-overreach/* $DOMAIN/
+find $OUTPUT_NAME -type f \( -name '*.htm*' -or -name '*.php*' \) -exec "$iterscript" "$DOMAIN" '{}' "$EXTERNALURLS" "$WGETREJECT" "$NOOVERREACH" -not -path "./$OUTPUT_NAME/wget-2-zim-overreach/*" \;
+find $OUTPUT_NAME/wget-2-zim-overreach/ -type f \( -name '*.htm*' -or -name '*.php*' \) -exec "$iterscript" "$DOMAIN" '{}' "$EXTERNALURLS" "$WGETREJECT" "ma" \;
+mv $OUTPUT_NAME/wget-2-zim-overreach/* $OUTPUT_NAME/
 rm $EXTERNALURLS $iterscript
 echo "iteration finished"
 }
 
 echo "renaming .css?xxx files to .css"
-find $DOMAIN -name '*\.css\?*' -exec sh -c 'mv '"'"'{}'"'"' "$(echo '"'"'{}'"'"' | sed -E "s#\.css\?.*#.css#g")" ' \;
+find $OUTPUT_NAME -name '*\.css\?*' -exec sh -c 'mv '"'"'{}' "'"'" "\$(echo '"'"'{}' "'"'" | sed -E "s#\.css\?.*#.css#g")" ' \;
 
 
 # various shenanegans to deal with media and large files
@@ -276,9 +292,9 @@ function largedelete {
 
 echo "deleting files deemed too large"
 
-if [[ "${OPTS[any-max]}" != "" ]]; then find $DOMAIN -type f -size "+${OPTS[any-max]}M" -delete; fi
+if [[ "${OPTS[any-max]}" != "" ]]; then find $OUTPUT_NAME -type f -size "+${OPTS[any-max]}M" -delete; fi
 
-if [[ "${OPTS[not-media-max]}" != "" ]]; then 	find $DOMAIN -type f -not \( \
+if [[ "${OPTS[not-media-max]}" != "" ]]; then 	find $OUTPUT_NAME -type f -not \( \
 				-name '*\.3g*' -or -name '*\.avi' -or -name '*\.flv*' -or -name '*\.h26*' -or -name '*\.m*v' -or -name '*\.mp*g' -or -name '*\.swf' -or -name '*\.wmv' -or -name '*\.mkv' -or -name '*\.mp4' -or -name '*\.divx' -or -name '*\.f4v' -or -name '*\.ogv' -or -name '*\.webm' \
 				-or -name '*\.aif' -or -name '*\.ogg' -or -name '*\.wav' -or -name '*\.aac' -or -name '*\.mp3' -or -name '*\.flac'  -or -name '*\.wma' -or -name '*\.amr' -or -name '*\.fla' -or -name '*\.ac3' -or -name '*\.au' -or -name '*\.mka' \
 				-or -name '*\.pdf' -or -name '*\.epub' -or -name '*\.pdb' -or -name '*\.xls*' -or -name '*\.doc*' -or -name '*\.od*' -or -name '*\.ppt*' \
@@ -286,22 +302,22 @@ if [[ "${OPTS[not-media-max]}" != "" ]]; then 	find $DOMAIN -type f -not \( \
 									\) -size "+${OPTS[not-media-max]}M" -delete;
 fi
 
-if [[ "${OPTS[picture-max]}" != "" ]]; then 	find $DOMAIN -type f -not \( \
+if [[ "${OPTS[picture-max]}" != "" ]]; then 	find $OUTPUT_NAME -type f -not \( \
 				-or -name '*\.png' -or -name '*\.jp' -or -name '*\.gif' -or -name '*\.svg' \
 									\) -size "+${OPTS[picture-max]}M" -delete;
 fi
 
-if [[ "${OPTS[document-max]}" != "" ]]; then 	find $DOMAIN -type f \( \
+if [[ "${OPTS[document-max]}" != "" ]]; then 	find $OUTPUT_NAME -type f \( \
 				-name '*\.pdf' -or -name '*\.epub' -or -name '*\.pdb' -or -name '*\.xls*' -or -name '*\.doc*' -or -name '*\.od*' -or -name '*\.ppt*' \
 									\) -size "+${OPTS[document-max]}M" -delete;
 fi
 
 
-if [[ "${OPTS[music-max]}" != "" ]]; then 	find $DOMAIN -type f \( \
+if [[ "${OPTS[music-max]}" != "" ]]; then 	find $OUTPUT_NAME -type f \( \
 				-or -name '*\.aif' -or -name '*\.ogg' -or -name '*\.wav' -or -name '*\.aac' -or -name '*\.mp3' -or -name '*\.flac'  -or -name '*\.wma' -or -name '*\.amr' -or -name '*\.fla' -or -name '*\.ac3' -or -name '*\.au' -or -name '*\.mka' \
 									\) -size "+${OPTS[music-max]}M" -delete;
 fi
-if [[ "${OPTS[video-max]}" != "" ]]; then 	find $DOMAIN -type f \( \
+if [[ "${OPTS[video-max]}" != "" ]]; then 	find $OUTPUT_NAME -type f \( \
 				-name '*\.3g*' -or -name '*\.avi' -or -name '*\.flv*' -or -name '*\.h26*' -or -name '*\.m*v' -or -name '*\.mp*g' -or -name '*\.swf' -or -name '*\.wmv' -or -name '*\.mkv' -or -name '*\.mp4' -or -name '*\.divx' -or -name '*\.f4v' -or -name '*\.ogv' -or -name '*\.webm' \
 									\) -size "+${OPTS[video-max]}M" -delete;
 fi
@@ -314,38 +330,38 @@ echo "deleting files finished"
 if [[ "$SKIPDOWNLOAD" != "true" ]]; then
 	thewget
 fi
-#rsync -ra $DOMAIN/ ${DOMAIN}_debug/
+#rsync -ra $OUTPUT_NAME/ ${OUTPUT_NAME}_debug/
 postwget
 largedelete
 
 # favicon
  
-MYFAVICON="$(command ls -w 1 $DOMAIN/favicon*.{png,ico,gif,jpg,bmp} 2>/dev/null | tail -n 1)"
+MYFAVICON="$(command ls -w 1 $OUTPUT_NAME/favicon*.{png,ico,gif,jpg,bmp} 2>/dev/null | tail -n 1)"
 
 if [ -f "$MYFAVICON" ]; then
-	convert "$MYFAVICON[0]" -define icon:auto-resize=48 $DOMAIN/zim_favicon.png
+	convert "$MYFAVICON[0]" -define icon:auto-resize=48 $OUTPUT_NAME/zim_favicon.png
 else  
-	convert -size 48x48 xc:white $DOMAIN/zim_favicon.png
+	convert -size 48x48 xc:white $OUTPUT_NAME/zim_favicon.png
 fi
 
 
 # choose index page (welcome)
 
-if [ ! -f "$DOMAIN/$WELCOME" ]; then
-	LISTHTML="$(find "$DOMAIN" -type f -maxdepth 1 \( -name 'index.htm*' -or -name 'index.php*' \) -printf '%f\n' 2>/dev/null | sort)"
- 	LISTHTML="$LISTHTML"$'\n'"$(find "$DOMAIN" -type f -maxdepth 1 \( -name '*.htm*' -or -name '*.php*' \) -printf '%f\n' 2>/dev/null | sort)"
-	WELCOME="$(echo "$LISTHTML" | sed '/^$/d' | cat - <(echo "$DOMAIN/index.html") | head -n 1 | sed "s#^[^/]*/##g")"
+if [ ! -f "$OUTPUT_NAME/$WELCOME" ]; then
+	LISTHTML="$(find "$OUTPUT_NAME" -type f -maxdepth 1 \( -name 'index.htm*' -or -name 'index.php*' \) -printf '%f\n' 2>/dev/null | sort)"
+ 	LISTHTML="$LISTHTML"$'\n'"$(find "$OUTPUT_NAME" -type f -maxdepth 1 \( -name '*.htm*' -or -name '*.php*' \) -printf '%f\n' 2>/dev/null | sort)"
+	WELCOME="$(echo "$LISTHTML" | sed '/^$/d' | cat - <(echo "$OUTPUT_NAME/index.html") | head -n 1 | sed "s#^[^/]*/##g")"
 fi
 
 
 # write ZIM
 
-rm ${DOMAIN}.zim >&/dev/null
+rm ${OUTPUT_NAME}.zim >&/dev/null
 
 echo "writing ZIM"
 
 if [[ -z "$ZIM_DESCRIPTION" ]]; then
-	DESCRIPTION="$(cat $DOMAIN/index.html | tr '\n' ' ' | grep -oaE "<title>[^>]*</title>" | sed "s/<[^>]*>//g;s/[[:space:]]\+/\ /g;s/^[[:space:]]*//g;s/[[:space:]]*$//g" | cat - <(echo "no description") | head -n 1 )"
+	DESCRIPTION="$(cat $OUTPUT_NAME/index.html | tr '\n' ' ' | grep -oaE "<title>[^>]*</title>" | sed "s/<[^>]*>//g;s/[[:space:]]\+/\ /g;s/^[[:space:]]*//g;s/[[:space:]]*$//g" | cat - <(echo "no description") | head -n 1 )"
 else
 	DESCRIPTION="$ZIM_DESCRIPTION"
 fi
@@ -356,10 +372,10 @@ else
 	LONGDESCRIPTION="$ZIM_LONGDESCRIPTION"
 fi
 
-if zimwriterfs --welcome="$WELCOME" --illustration=zim_favicon.png --language="$ZIM_LANGUAGE" --title="$DOMAIN" --description "$DESCRIPTION" --longDescription="$LONGDESCRIPTION" --creator="$ZIM_CREATOR" --publisher "$ZIM_PUBLISHER" --name "$DOMAIN" --source="$DOMAIN" --scraper "wget-2-zim `date` , `wget --version |head -n 1`" ./$DOMAIN $DOMAIN.zim; then
+if zimwriterfs --welcome="$WELCOME" --illustration=zim_favicon.png --language="$ZIM_LANGUAGE" --title="$DOMAIN" --description "$DESCRIPTION" --longDescription="$LONGDESCRIPTION" --creator="$ZIM_CREATOR" --publisher "$ZIM_PUBLISHER" --name "$OUTPUT_NAME" --source="$DOMAIN" --scraper "wget-2-zim `date` , `wget --version |head -n 1`" ./$OUTPUT_NAME $OUTPUT_NAME.zim; then
 	echo "Success in creating ZIM file!"
-#	rm -rf ./$DOMAIN
+#	rm -rf ./$OUTPUT_NAME
 else
-	echo "FAILURE! Left $DOMAIN download directory in place."
+	echo "FAILURE! Left $OUTPUT_NAME download directory in place."
 fi
 
