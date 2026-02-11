@@ -32,6 +32,9 @@ if [[ " --help -help -h " =~ " $1 " || "$1" == "" ]]; then
 	echo "	--skip-download			Skip the wget download step and use existing files in the domain directory."
 	echo "	--creator				Custom creator string for the ZIM file. Default = https://github.com/ballerburg9005/wget-2-zim"
 	echo "	--publisher				Custom publisher string for the ZIM file. Default = wget-2-zim, a simple easy to use script that just works"
+	echo "	--description			Custom description for the ZIM file. Default = extracted from page title"
+	echo "	--long-description		Custom long description for the ZIM file. Default = description + '(created by wget-2-zim)'"
+	echo "	--language				ISO 639-3 language code for the ZIM file. Default = eng"
 	exit -1
 fi
 
@@ -66,6 +69,9 @@ done
 
 ZIM_CREATOR="https://github.com/ballerburg9005/wget-2-zim"
 ZIM_PUBLISHER="wget-2-zim, a simple easy to use script that just works"
+ZIM_DESCRIPTION=""
+ZIM_LONGDESCRIPTION=""
+ZIM_LANGUAGE="eng"
 
 ARGS=("$@");
 for ((i=0; i<${#ARGS[@]}; i++)); do
@@ -82,6 +88,24 @@ for ((i=0; i<${#ARGS[@]}; i++)); do
 		--publisher)
 			if (( i + 1 < ${#ARGS[@]} )); then ZIM_PUBLISHER="${ARGS[$((i + 1))]}"; fi
 			;;
+		--description=*)
+			ZIM_DESCRIPTION="${ARGS[$i]#--description=}"
+			;;
+		--description)
+			if (( i + 1 < ${#ARGS[@]} )); then ZIM_DESCRIPTION="${ARGS[$((i + 1))]}"; fi
+			;;
+		--long-description=*)
+			ZIM_LONGDESCRIPTION="${ARGS[$i]#--long-description=}"
+			;;
+		--long-description)
+			if (( i + 1 < ${#ARGS[@]} )); then ZIM_LONGDESCRIPTION="${ARGS[$((i + 1))]}"; fi
+			;;
+		--language=*)
+			ZIM_LANGUAGE="${ARGS[$i]#--language=}"
+			;;
+		--language)
+			if (( i + 1 < ${#ARGS[@]} )); then ZIM_LANGUAGE="${ARGS[$((i + 1))]}"; fi
+			;;
 	esac
 done
 
@@ -95,7 +119,8 @@ echo -en "Size limits: "
 for opt in "${!OPTS[@]}"; do echo -en "$COMMA$opt = ${OPTS[$opt]}"; COMMA=", "; done
 echo ""
 echo "ZIM creator: $ZIM_CREATOR"
-echo "ZIM publisher: $ZIM_PUBLISHER"
+echo "ZIM publisher: $ZIM_PUBLISHER"echo "ZIM language: $ZIM_LANGUAGE"if [[ -n "$ZIM_DESCRIPTION" ]]; then echo "ZIM description: $ZIM_DESCRIPTION"; fi
+if [[ -n "$ZIM_LONGDESCRIPTION" ]]; then echo "ZIM long description: $ZIM_LONGDESCRIPTION"; fi
 echo "+++++++++++++ BEGIN CRAWLING +++++++++++++"
 echo ""
 
@@ -318,9 +343,20 @@ fi
 rm ${DOMAIN}.zim >&/dev/null
 
 echo "writing ZIM"
-DESCRIPTION="$(cat $DOMAIN/index.html | tr '\n' ' ' | grep -oaE "<title>[^>]*</title>" | sed "s/<[^>]*>//g;s/[[:space:]]\+/\ /g;s/^[[:space:]]*//g;s/[[:space:]]*$//g" | cat - <(echo "no description") | head -n 1 )" 
 
-if zimwriterfs --welcome="$WELCOME" --illustration=zim_favicon.png --language=eng --title="$DOMAIN" --description "$DESCRIPTION" --longDescription="$DESCRIPTION (created by wget-2-zim)" --creator="$ZIM_CREATOR" --publisher "$ZIM_PUBLISHER" --name "$DOMAIN" --source="$DOMAIN" --scraper "wget-2-zim `date` , `wget --version |head -n 1`" ./$DOMAIN $DOMAIN.zim; then
+if [[ -z "$ZIM_DESCRIPTION" ]]; then
+	DESCRIPTION="$(cat $DOMAIN/index.html | tr '\n' ' ' | grep -oaE "<title>[^>]*</title>" | sed "s/<[^>]*>//g;s/[[:space:]]\+/\ /g;s/^[[:space:]]*//g;s/[[:space:]]*$//g" | cat - <(echo "no description") | head -n 1 )"
+else
+	DESCRIPTION="$ZIM_DESCRIPTION"
+fi
+
+if [[ -z "$ZIM_LONGDESCRIPTION" ]]; then
+	LONGDESCRIPTION="$DESCRIPTION (created by wget-2-zim)"
+else
+	LONGDESCRIPTION="$ZIM_LONGDESCRIPTION"
+fi
+
+if zimwriterfs --welcome="$WELCOME" --illustration=zim_favicon.png --language="$ZIM_LANGUAGE" --title="$DOMAIN" --description "$DESCRIPTION" --longDescription="$LONGDESCRIPTION" --creator="$ZIM_CREATOR" --publisher "$ZIM_PUBLISHER" --name "$DOMAIN" --source="$DOMAIN" --scraper "wget-2-zim `date` , `wget --version |head -n 1`" ./$DOMAIN $DOMAIN.zim; then
 	echo "Success in creating ZIM file!"
 #	rm -rf ./$DOMAIN
 else
