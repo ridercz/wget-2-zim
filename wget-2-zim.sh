@@ -30,6 +30,8 @@ if [[ " --help -help -h " =~ " $1 " || "$1" == "" ]]; then
 	echo "	--overreach-any			Overreach by downloading any sort of src= and href= content from external domains."
 	echo "	--turbo				Disable all download delays (will probably result in half the files missing due to throttling with false 404s)"
 	echo "	--skip-download			Skip the wget download step and use existing files in the domain directory."
+	echo "	--creator				Custom creator string for the ZIM file. Default = https://github.com/ballerburg9005/wget-2-zim"
+	echo "	--publisher				Custom publisher string for the ZIM file. Default = wget-2-zim, a simple easy to use script that just works"
 	exit -1
 fi
 
@@ -62,6 +64,27 @@ for opt in any-max not-media-max picture-max document-max music-max video-max wg
 
 done
 
+ZIM_CREATOR="https://github.com/ballerburg9005/wget-2-zim"
+ZIM_PUBLISHER="wget-2-zim, a simple easy to use script that just works"
+
+ARGS=("$@");
+for ((i=0; i<${#ARGS[@]}; i++)); do
+	case "${ARGS[$i]}" in
+		--creator=*)
+			ZIM_CREATOR="${ARGS[$i]#--creator=}"
+			;;
+		--creator)
+			if (( i + 1 < ${#ARGS[@]} )); then ZIM_CREATOR="${ARGS[$((i + 1))]}"; fi
+			;;
+		--publisher=*)
+			ZIM_PUBLISHER="${ARGS[$i]#--publisher=}"
+			;;
+		--publisher)
+			if (( i + 1 < ${#ARGS[@]} )); then ZIM_PUBLISHER="${ARGS[$((i + 1))]}"; fi
+			;;
+	esac
+done
+
 
 # print options
 
@@ -71,6 +94,8 @@ echo "$WGETREJECT"
 echo -en "Size limits: "
 for opt in "${!OPTS[@]}"; do echo -en "$COMMA$opt = ${OPTS[$opt]}"; COMMA=", "; done
 echo ""
+echo "ZIM creator: $ZIM_CREATOR"
+echo "ZIM publisher: $ZIM_PUBLISHER"
 echo "+++++++++++++ BEGIN CRAWLING +++++++++++++"
 echo ""
 
@@ -295,7 +320,7 @@ rm ${DOMAIN}.zim >&/dev/null
 echo "writing ZIM"
 DESCRIPTION="$(cat $DOMAIN/index.html | tr '\n' ' ' | grep -oaE "<title>[^>]*</title>" | sed "s/<[^>]*>//g;s/[[:space:]]\+/\ /g;s/^[[:space:]]*//g;s/[[:space:]]*$//g" | cat - <(echo "no description") | head -n 1 )" 
 
-if zimwriterfs --welcome="$WELCOME" --illustration=zim_favicon.png --language=eng --title="$DOMAIN" --description "$DESCRIPTION" --longDescription="$DESCRIPTION (created by wget-2-zim)" --creator="https://github.com/ballerburg9005/wget-2-zim" --publisher "wget-2-zim, a simple easy to use script that just works" --name "$DOMAIN" --source="$DOMAIN" --scraper "wget-2-zim `date` , `wget --version |head -n 1`" ./$DOMAIN $DOMAIN.zim; then
+if zimwriterfs --welcome="$WELCOME" --illustration=zim_favicon.png --language=eng --title="$DOMAIN" --description "$DESCRIPTION" --longDescription="$DESCRIPTION (created by wget-2-zim)" --creator="$ZIM_CREATOR" --publisher "$ZIM_PUBLISHER" --name "$DOMAIN" --source="$DOMAIN" --scraper "wget-2-zim `date` , `wget --version |head -n 1`" ./$DOMAIN $DOMAIN.zim; then
 	echo "Success in creating ZIM file!"
 #	rm -rf ./$DOMAIN
 else
