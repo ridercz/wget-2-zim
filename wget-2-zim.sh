@@ -88,6 +88,9 @@ if [[ " --help -help -h " =~ " $1 " || "$1" == "" ]]; then
 	echo ""
 	echo "  --working-dir [PATH]"
 	echo "      Custom working directory name. Default: domain name"
+	echo ""
+	echo "  --timestamp"
+	echo "      Add timestamp (YYYYMMDD_hhmmss) to ZIM file name."
 	exit -1
 fi
 
@@ -127,6 +130,7 @@ ZIM_LONGDESCRIPTION=""
 ZIM_LANGUAGE="eng"
 OUTPUT_NAME=""
 WORKING_DIR=""
+USE_TIMESTAMP="false"
 
 ARGS=("$@");
 for ((i=0; i<${#ARGS[@]}; i++)); do
@@ -173,6 +177,9 @@ for ((i=0; i<${#ARGS[@]}; i++)); do
 		--working-dir)
 			if (( i + 1 < ${#ARGS[@]} )); then WORKING_DIR="${ARGS[$((i + 1))]}"; fi
 			;;
+		--timestamp)
+			USE_TIMESTAMP="true"
+			;;
 	esac
 done
 
@@ -190,6 +197,7 @@ echo "ZIM publisher: $ZIM_PUBLISHER"
 echo "ZIM language: $ZIM_LANGUAGE"
 if [[ -n "$OUTPUT_NAME" ]]; then echo "Output name: $OUTPUT_NAME"; fi
 if [[ -n "$WORKING_DIR" ]]; then echo "Working directory: $WORKING_DIR"; fi
+echo "Add timestamp: $USE_TIMESTAMP"
 if [[ -n "$ZIM_DESCRIPTION" ]]; then echo "ZIM description: $ZIM_DESCRIPTION"; fi
 if [[ -n "$ZIM_LONGDESCRIPTION" ]]; then echo "ZIM long description: $ZIM_LONGDESCRIPTION"; fi
 echo "+++++++++++++ BEGIN CRAWLING +++++++++++++"
@@ -208,6 +216,11 @@ fi
 
 # Remove .zim extension if present so we can append it consistently
 OUTPUT_NAME="${OUTPUT_NAME%.zim}"
+
+# Add timestamp if requested
+if [[ "$USE_TIMESTAMP" == "true" ]]; then
+	OUTPUT_NAME="${OUTPUT_NAME}_$(date +%Y%m%d_%H%M%S)"
+fi
 
 if [[ -z "$WORKING_DIR" ]]; then
 	WORKING_DIR="$DOMAIN"
