@@ -29,7 +29,7 @@ if [[ " --help -help -h " =~ " $1 " || "$1" == "" ]]; then
 	echo "	--no-overreach-media		Don't overreach by downloading media files from external domains (might affect images directly visible on the page)."
 	echo "	--overreach-any			Overreach by downloading any sort of src= and href= content from external domains."
 	echo "	--turbo				Disable all download delays (will probably result in half the files missing due to throttling with false 404s)"
-
+	echo "	--skip-download			Skip the wget download step and use existing files in the domain directory."
 	exit -1
 fi
 
@@ -45,6 +45,9 @@ if   [[ " $@ " =~ " --include-any " ]]; then WGETREJECT=""; fi
 
 WGGETWAIT="0.4"
 if   [[ " $@ " =~ " --turbo " ]]; then WGGETWAIT="0"; fi
+
+SKIPDOWNLOAD="false"
+if   [[ " $@ " =~ " --skip-download " ]]; then SKIPDOWNLOAD="true"; fi
 
 NOOVERREACH="a"
 if   [[ " $@ " =~ " --no-overreach-media " ]]; then NOOVERREACH="${NOOVERREACH}m"; fi
@@ -258,7 +261,9 @@ echo "deleting files finished"
 
 # I made those functions to easily switch off for debugging
 
-thewget
+if [[ "$SKIPDOWNLOAD" != "true" ]]; then
+	thewget
+fi
 #rsync -ra $DOMAIN/ ${DOMAIN}_debug/
 postwget
 largedelete
@@ -268,7 +273,7 @@ largedelete
 MYFAVICON="$(command ls -w 1 $DOMAIN/favicon*.{png,ico,gif,jpg,bmp} 2>/dev/null | tail -n 1)"
 
 if [ -f "$MYFAVICON" ]; then
-	convert -resize 48x48 "$MYFAVICON" $DOMAIN/zim_favicon.png
+	convert "$MYFAVICON[0]" -define icon:auto-resize=48 $DOMAIN/zim_favicon.png
 else  
 	convert -size 48x48 xc:white $DOMAIN/zim_favicon.png
 fi
