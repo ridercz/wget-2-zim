@@ -370,7 +370,9 @@ echo "iteration finished"
 }
 
 echo "renaming .css?xxx files to .css"
-find $WORKING_DIR -name '*\.css\?*' -exec sh -c 'mv '"'"'{}' "'"'" "\$(echo '"'"'{}' "'"'" | sed -E "s#\.css\?.*#.css#g")" ' \;
+find $WORKING_DIR -name '*\.css\?*' | while IFS= read -r file; do
+	mv "$file" "$(echo "$file" | sed -E "s#\.css\?.*#.css#g")"
+done
 
 
 # various shenanegans to deal with media and large files
